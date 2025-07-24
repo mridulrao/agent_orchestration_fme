@@ -1,0 +1,102 @@
+Post call process 
+Quick Analytics 
+ - Who ended the call 
+ - Call outcome - Resolved, Not-Resolved, Call-Transfer 
+ - Call outcome reason - Reason of the outcome above 
+ - Call Duration 
+ - Call summary 
+
+Snow Analytics 
+ - Ticket used/created in the call 
+ - Reason for the tickets being created
+
+Interaction Analytics 
+ - User/Agent conversation 
+ - 
+
+Agent Analytics 
+ - Which agents were used in the call 
+ - Functions used by each agent 
+ - Input of these functions
+ - Output of the functions used 
+
+
+
+Call Table 
+- call_id (Primary Key)
+- phone_number
+- start_time
+- end_time
+- call_duration (calculated or stored)
+- call_status (Ongoing/Completed)
+- call_ended_by (User/Bot)
+- call_outcome (Resolved/Not-Resolved/Escalated(human-transfer))
+- call_outcome_reason (text description)
+- conversation_summary
+- user_satisfaction_score (if collected) - DEFAULT
+- call_quality_score - DEFAULT
+- audio_quality_metrics - DEFAULT
+
+
+Conversation Table 
+- conversation_id (Primary Key)
+- call_id (Foreign Key)
+- timestamp
+- speaker (User/Bot/System)
+- message_content
+- sentiment_score - DEFAULT
+- speech_to_text_accuracy - DEFAULT
+- turn_sequence_number
+
+
+Action Table 
+- action_id (Primary Key)
+- call_id (Foreign Key)
+- conversation_id (Foreign Key - to link to specific conversation turn)
+- agent_name
+- action_type (function name)
+- action_status (Success/Fail/Timeout/Retry)
+- input_parameters (JSON)
+- output_response (JSON)
+- execution_time_ms
+- error_message (if failed)
+- timestamp
+- retry_count
+
+
+Snow Table
+- snow_id (Primary Key)
+- call_id (Foreign Key)
+- ticket_id
+- ticket_action (Created/Updated/Retrieved/Linked)
+- ticket_status
+- creation_reason
+- timestamp
+
+
+Agent Usage Table
+- usage_id (Primary Key)
+- call_id (Foreign Key)
+- agent_name
+- activation_timestamp
+- deactivation_timestamp
+- usage_duration
+- handoff_reason (if applicable)
+- success_rate - DEFAULT
+
+
+Call Metric Table 
+- summary_id (Primary Key)
+- call_id (Foreign Key)
+- total_user_turns
+- total_bot_turns
+- avg_response_time
+- total_functions_called
+- unique_agents_used
+- tickets_created_count
+- overall_success_score
+
+
+
+
+

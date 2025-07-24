@@ -1,0 +1,1196 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator python_client {
+  provider             = "prisma-client-py"
+  recursive_type_depth = "5"
+  interface            = "asyncio"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model organizations {
+  created_at                    DateTime                        @default(now()) @db.Timestamptz(6)
+  name                          String?                         @db.VarChar
+  description                   String?                         @db.VarChar
+  logo                          String?                         @db.VarChar
+  id                            String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  phone                         String?                         @db.VarChar
+  config                        String?                         @db.VarChar
+  tenant_id                     String?                         @unique @db.VarChar
+  SimulationActivity            SimulationActivity[]
+  SimulationTheme               SimulationTheme[]
+  ad_appliance_events           ad_appliance_events[]
+  ad_appliance_tasks            ad_appliance_tasks[]
+  agent_assist                  agent_assist[]
+  chat_virtual_agents           chat_virtual_agents[]
+  configurations                configurations[]
+  cva_conversations             cva_conversations[]
+  cva_dashboard                 cva_dashboard[]
+  incidents                     incidents[]
+  integrations                  integrations[]
+  kb_collections                kb_collections[]
+  knowledgebase_collection      knowledgebase_collection[]
+  knowledgebase_collection_tags knowledgebase_collection_tags[]
+  knowledgebase_document_assist knowledgebase_document_assist[]
+  meeting_joiner                meeting_joiner[]
+  modules                       modules[]
+  p1_meetings                   p1_meetings[]
+  phone_number                  phone_number[]
+  recommendations               recommendations[]
+  tags                          tags[]
+  teams                         teams[]
+  ticket_upload_history         ticket_upload_history[]
+  train_assist_topics           train_assist_topics[]
+  users                         users[]
+  voice_virtual_agents          voice_virtual_agents[]
+}
+
+model configurations {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at   DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime      @default(now()) @db.Timestamptz(6)
+  org_id       String        @db.Uuid
+  config_key   String        @db.VarChar
+  config_value Json?         @db.Json
+  is_deleted   Boolean       @default(false)
+  org          organizations @relation(fields: [org_id], references: [id])
+
+  @@unique([org_id, config_key])
+}
+
+model integrations {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at       DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime      @default(now()) @db.Timestamptz(6)
+  org_id           String        @db.Uuid
+  integration_type String        @db.VarChar
+  config           Json?         @db.Json
+  vault            String        @db.VarChar
+  key              String        @db.VarChar
+  org              organizations @relation(fields: [org_id], references: [id])
+
+  @@unique([org_id, integration_type])
+}
+
+model permissions {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  user_id    String?  @db.Uuid
+  team_id    String?  @db.Uuid
+  teams      teams?   @relation(fields: [team_id], references: [id])
+  users      users?   @relation(fields: [user_id], references: [id])
+}
+
+model teams {
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at  DateTime       @default(now()) @db.Timestamptz(6)
+  name        String?        @db.VarChar
+  logo        String?        @db.VarChar
+  description String?        @db.VarChar
+  org_id      String?        @db.Uuid
+  created_by  String?        @db.VarChar
+  permissions permissions[]
+  org         organizations? @relation(fields: [org_id], references: [id])
+}
+
+model users {
+  created_at                             DateTime                                 @default(now()) @db.Timestamptz(6)
+  name                                   String?                                  @db.VarChar
+  email                                  String?                                  @unique @db.VarChar
+  password                               String                                   @db.VarChar
+  profile_pic                            String?                                  @db.VarChar
+  id                                     String                                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  calendar                               String?                                  @db.VarChar
+  org_id                                 String?                                  @db.Uuid
+  role                                   role                                     @default(User)
+  simulation_activities                  SimulationActivity[]
+  ai_logs                                ai_logs[]
+  cva_dashboard                          cva_dashboard[]
+  intake                                 intake[]
+  knowledge_transition_meetings          knowledge_transition_meetings[]
+  knowledgebase_document_assist_versions knowledgebase_document_assist_versions[]
+  permissions                            permissions[]
+  postcall_kb_entry_version              postcall_kb_entry_version[]
+  simulations                            simulations[]
+  train_assist_activity                  train_assist_activity[]                  @relation("user_train_assist_activity")
+  train_assist_topic_quiz                train_assist_topic_quiz[]                @relation("user_train_assist_topic_quiz")
+  user_profiles                          user_profiles[]
+  org                                    organizations?                           @relation(fields: [org_id], references: [id])
+  users_quizes                           users_quizes[]
+}
+
+model phone_number {
+  id       String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id   String        @db.Uuid
+  number   String
+  app_type AppType
+  app_id   String
+  org      organizations @relation(fields: [org_id], references: [id])
+
+  @@unique([app_id, number])
+}
+
+model agent_assist {
+  id              BigInt         @id @default(autoincrement())
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  agent_assist_id String?        @db.Uuid
+  message         String?        @db.VarChar
+  employee_id     String?        @db.VarChar
+  title           String?
+  org_id          String?        @db.Uuid
+  message_id      String?        @db.Uuid
+  org             organizations? @relation(fields: [org_id], references: [id])
+}
+
+model voice_virtual_agent_call_status {
+  created_at   DateTime                   @default(now()) @db.Timestamptz(6)
+  call_id      String?                    @db.Uuid
+  content_type String?                    @db.VarChar
+  role         String?                    @db.VarChar
+  content      Json?                      @db.Json
+  id           String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  call         voice_virtual_agent_calls? @relation(fields: [call_id], references: [id])
+}
+
+model voice_virtual_agent_calls {
+  id                              String                            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at                      DateTime                          @default(now()) @db.Timestamptz(6)
+  caller                          String?
+  ended_reason                    String?
+  details_url                     String?
+  ticket_id                       String?
+  ended_at                        DateTime?                         @db.Timestamptz(6)
+  recordingUrl                    String?                           @db.VarChar
+  status                          String?                           @db.VarChar
+  user_name                       String?                           @db.VarChar
+  user_sys_id                     String?                           @db.VarChar
+  called_at                       String?
+  voice_virtual_agent_id          String?                           @db.Uuid
+  incident_ticket_ids             String[]                          @default([])
+  interaction_id                  String?
+  sentiment                       String?                           @db.VarChar
+  summary                         String?                           @db.VarChar
+  voice_virtual_agent_call_status voice_virtual_agent_call_status[]
+  voice_virtual_agent             voice_virtual_agents?             @relation(fields: [voice_virtual_agent_id], references: [id])
+}
+
+model voice_virtual_agents {
+  id                        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at                DateTime                    @default(now()) @db.Timestamptz(6)
+  org_id                    String?                     @db.Uuid
+  phone_number              String                      @unique @db.VarChar
+  config                    Json?                       @db.Json
+  name                      String?
+  kb_id                     String?                     @db.Uuid
+  agent_type                String?
+  agent_id                  String?                     @db.Uuid
+  agent_prompt              Json?                       @db.Json
+  voice_virtual_agent_calls voice_virtual_agent_calls[]
+  organization              organizations?              @relation(fields: [org_id], references: [id])
+}
+
+model intake {
+  id         BigInt    @id @default(autoincrement())
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  meeting_id String?   @db.Uuid
+  team_id    String?   @db.Uuid
+  created_by String?   @db.Uuid
+  user       users?    @relation(fields: [created_by], references: [id])
+  meetings   meetings? @relation(fields: [meeting_id], references: [meeting_id])
+
+  @@unique([meeting_id, created_by])
+}
+
+model postcall_analysis {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+  meeting_id     String?   @unique @db.Uuid
+  transcript     String?   @db.VarChar
+  submission_doc String?   @db.VarChar
+  breakdown      String?   @db.VarChar
+  sentiment      String?   @db.VarChar
+  entity         String?   @db.VarChar
+  status         String?   @db.VarChar
+  summary        String?   @db.VarChar
+  type           String?   @db.VarChar
+  meeting        meetings? @relation(fields: [meeting_id], references: [meeting_id])
+}
+
+model chats {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at DateTime? @default(dbgenerated("(now() AT TIME ZONE 'utc'::text)")) @db.Timestamptz(6)
+  meeting_id String?   @db.Uuid
+  message    String?   @db.VarChar
+  role       String?   @db.VarChar
+  message_id String?   @db.Uuid
+  meeting    meetings? @relation(fields: [meeting_id], references: [meeting_id])
+}
+
+model meetings {
+  title                         String?                         @db.VarChar
+  channel                       String?                         @db.VarChar
+  link                          String?                         @db.VarChar
+  phone_number                  String?                         @db.VarChar
+  postcall_transcript           Json?                           @db.Json
+  call_recording_url            String?                         @db.VarChar
+  analysis_status               String?                         @db.VarChar
+  bot_name                      String?                         @db.VarChar
+  listener_id                   String?                         @db.VarChar
+  app_id                        String?                         @db.VarChar
+  start_timestamp               DateTime?                       @default(now()) @db.Timestamptz(6)
+  end_timestamp                 DateTime?                       @db.Timestamptz(6)
+  postcall_analysis_webhook     String?                         @db.VarChar
+  meeting_id                    String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  is_deleted                    Boolean                         @default(false)
+  meeting_bot_type              String?                         @db.VarChar
+  chats                         chats[]
+  intake                        intake[]
+  knowledge_transition_meetings knowledge_transition_meetings[]
+  meeting_joiner                meeting_joiner[]
+  postcall_analysis             postcall_analysis?
+  postcall_topics_for_meeting   postcall_topics_for_meeting[]
+  realtime_transcripts          realtime_transcripts[]
+
+  @@index([meeting_bot_type, analysis_status])
+}
+
+model realtime_transcripts {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at   DateTime? @default(dbgenerated("(now() AT TIME ZONE 'utc'::text)")) @db.Timestamptz(6)
+  content      Json?     @db.Json
+  content_type String?   @db.VarChar
+  meeting_id   String?   @db.Uuid
+  meetings     meetings? @relation(fields: [meeting_id], references: [meeting_id])
+}
+
+model suggestions {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  suggestion String?  @db.VarChar
+  meeting_id String?  @db.VarChar
+}
+
+model kb_collections {
+  name                    String
+  org_id                  String                    @db.Uuid
+  id                      String                    @id @default(uuid()) @db.Uuid
+  last_synced_at          DateTime?
+  source                  kbSource                  @default(azure_blob)
+  source_config           Json?
+  kb_collection_documents kb_collection_documents[]
+  org                     organizations             @relation(fields: [org_id], references: [id])
+}
+
+model kb_collection_documents {
+  id                         String         @id @default(uuid()) @db.Uuid
+  kb_collection_id           String         @db.Uuid
+  document_block_storage_url String
+  is_indexed                 Boolean        @default(false)
+  is_deleted                 Boolean        @default(false)
+  name                       String?
+  kb_collection              kb_collections @relation(fields: [kb_collection_id], references: [id])
+
+  @@unique([kb_collection_id, document_block_storage_url])
+}
+
+model user_profiles {
+  id               String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id          String? @db.Uuid
+  profile_type     String?
+  profile_username String?
+  user             users?  @relation(fields: [user_id], references: [id])
+}
+
+model p1_meetings {
+  created_at       DateTime       @default(now()) @db.Timestamptz(6)
+  team_id          String?        @db.VarChar
+  created_by       String?        @db.VarChar
+  incident_name    String?        @db.VarChar
+  meeting_id       String         @db.Uuid
+  organizations_id String?        @db.Uuid
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizations    organizations? @relation(fields: [organizations_id], references: [id])
+}
+
+model noc_rules {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  description String?
+  config      Json?
+}
+
+model reaction {
+  id         BigInt   @id @default(autoincrement())
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  user_id    String   @db.VarChar
+  reaction   String?  @db.VarChar
+  message    String?  @db.VarChar
+}
+
+model binary_reaction {
+  id         BigInt   @id @default(autoincrement())
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  session_id String   @db.Uuid
+  reaction   Boolean  @default(true)
+  message    String?  @db.VarChar
+  app_id     String?  @db.VarChar
+  message_id String   @db.Uuid
+}
+
+model noc_agent_assist {
+  id                  BigInt   @id @default(autoincrement())
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  noc_agent_assist_id String?  @db.VarChar
+  employee_id         String?  @db.VarChar
+  title               String?  @db.VarChar
+  message             String?  @db.VarChar
+}
+
+model ai_logs {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  org_id        String?  @db.Uuid
+  session_id    String?  @db.Uuid
+  app_id        String?
+  request_body  Json?    @db.Json
+  response_body Json?    @db.Json
+  user_id       String?  @db.Uuid
+  user          users?   @relation(fields: [user_id], references: [id])
+}
+
+model dashboard_data {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  created_by       String?  @db.VarChar
+  num_jobs         BigInt?  @default(0)
+  num_applications BigInt?  @default(0)
+  num_intake       BigInt?  @default(0)
+  num_interviews   BigInt?  @default(0)
+}
+
+model issues {
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String? @db.VarChar
+  session_id String? @db.VarChar
+  feedback   String? @db.VarChar
+}
+
+model logins {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  login_time      DateTime @default(now()) @db.Timestamptz(6)
+  user_id         String?  @db.Uuid
+  application_url String?
+}
+
+model nudging {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime  @default(now()) @db.Timestamptz(6)
+  sys_id       String?   @db.VarChar
+  task_type    String?   @db.VarChar
+  source_table String?   @db.VarChar
+  approver     String?   @db.VarChar
+  count        Int       @default(0)
+  snooze_until DateTime? @db.Timestamptz(6)
+}
+
+model knowledge_transition_meetings {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  meeting_id String?   @db.Uuid
+  team_id    String?   @db.Uuid
+  created_by String?   @db.Uuid
+  user       users?    @relation(fields: [created_by], references: [id])
+  meetings   meetings? @relation(fields: [meeting_id], references: [meeting_id])
+
+  @@unique([meeting_id, created_by])
+}
+
+model knowledgebase_collection {
+  id                          String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                        String                          @db.VarChar
+  org_id                      String                          @db.Uuid
+  source                      kbSource                        @default(azure_blob)
+  source_config               Json?                           @db.Json
+  created_at                  DateTime                        @default(now()) @db.Timestamptz(6)
+  last_synced_at              DateTime?                       @db.Timestamptz(6)
+  SimulationTheme             SimulationTheme[]
+  org                         organizations                   @relation(fields: [org_id], references: [id])
+  tags                        knowledgebase_collection_tags[]
+  documents                   knowledgebase_document_assist[]
+  postcall_topics_for_meeting postcall_topics_for_meeting[]
+  train_assist_topics         train_assist_topics[]
+}
+
+model knowledgebase_document_assist {
+  id                              String                                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                            String                                   @db.VarChar
+  knowledgebase_collection_id     String                                   @db.Uuid
+  access_url                      String                                   @db.VarChar
+  status                          document_status                          @default(inserted)
+  is_indexed                      Boolean                                  @default(false)
+  is_deleted                      Boolean                                  @default(false)
+  created_at                      DateTime                                 @default(now()) @db.Timestamptz(6)
+  updated_at                      DateTime                                 @default(now()) @db.Timestamptz(6)
+  summary                         String?                                  @db.VarChar
+  edited_document                 String?                                  @db.VarChar
+  category                        String?                                  @db.VarChar
+  tags                            String[]                                 @db.VarChar
+  sentiment                       Json?                                    @db.Json
+  suggestions                     String?                                  @db.VarChar
+  score                           Float?                                   @default(0)
+  queries                         String[]                                 @db.VarChar
+  org_id                          String?                                  @db.Uuid
+  cluster                         String?                                  @db.VarChar
+  language                        String?                                  @db.VarChar
+  content                         String?                                  @db.VarChar
+  is_chunked_indexed              Boolean                                  @default(false)
+  kb_collection                   knowledgebase_collection                 @relation(fields: [knowledgebase_collection_id], references: [id])
+  organizations                   organizations?                           @relation(fields: [org_id], references: [id])
+  versions                        knowledgebase_document_assist_versions[]
+  similarities_from               knowledgebase_similarity[]               @relation("similarity_from_document_id")
+  similarities_to                 knowledgebase_similarity[]               @relation("similarity_to_document_id")
+  translation_similarity_from     knowledgebase_translation[]              @relation("translation_similarity_from_document_id")
+  translation_similarity_to       knowledgebase_translation[]              @relation("translation_similarity_to_document_id")
+  modules_knowledgebase_documents modules_knowledgebase_documents[]
+  train_assist_ingest             train_assist_ingest[]                    @relation("train_assist_ingest_document")
+  recommendations                 recommendations[]                        @relation("RecommendationToDocuments")
+  incidents                       incidents[]                              @relation("incidents_to_knowledgebase_document_assist")
+  train_assist_topics             train_assist_topics[]                    @relation("train_assist_documents_topics")
+}
+
+model knowledgebase_document_assist_versions {
+  id          String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content     String
+  document_id String                        @db.Uuid
+  updated_by  String?                       @db.Uuid
+  created_at  DateTime                      @default(now()) @db.Timestamptz(6)
+  document    knowledgebase_document_assist @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  user        users?                        @relation(fields: [updated_by], references: [id])
+
+  @@index([document_id, created_at(sort: Desc)])
+}
+
+model knowledgebase_similarity {
+  from_document_id String                        @db.Uuid
+  to_document_id   String                        @db.Uuid
+  similarity_score Float                         @default(0)
+  redundancy_score Float                         @default(0)
+  created_at       DateTime                      @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime                      @default(now()) @db.Timestamptz(6)
+  document_one     knowledgebase_document_assist @relation("similarity_from_document_id", fields: [from_document_id], references: [id])
+  document_two     knowledgebase_document_assist @relation("similarity_to_document_id", fields: [to_document_id], references: [id])
+
+  @@id([from_document_id, to_document_id])
+}
+
+model knowledgebase_translation {
+  from_document_id       String                        @db.Uuid
+  to_document_id         String                        @db.Uuid
+  from_document_language String                        @db.VarChar
+  to_document_language   String                        @db.VarChar
+  similarity_score       Float                         @default(0)
+  redundancy_score       Float                         @default(0)
+  created_at             DateTime                      @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime                      @default(now()) @db.Timestamptz(6)
+  org_id                 String?                       @db.Uuid
+  document_one           knowledgebase_document_assist @relation("translation_similarity_from_document_id", fields: [from_document_id], references: [id])
+  document_two           knowledgebase_document_assist @relation("translation_similarity_to_document_id", fields: [to_document_id], references: [id])
+
+  @@id([from_document_id, to_document_id])
+}
+
+model recommendations {
+  id                String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at        DateTime                        @default(now()) @db.Timestamptz(6)
+  recommendation    String?                         @db.VarChar
+  type              recommendation_type
+  rank              Int
+  feedback          feedback_type?
+  resolved          Boolean                         @default(false)
+  metadata          Json?
+  org_id            String?                         @db.Uuid
+  resolved_at       DateTime?                       @db.Timestamptz(6)
+  organizations     organizations?                  @relation(fields: [org_id], references: [id])
+  related_to_kb_ids knowledgebase_document_assist[] @relation("RecommendationToDocuments")
+  incidents         incidents[]                     @relation("incidents_to_recommendations")
+}
+
+model incidents {
+  id                            String                          @id
+  incident_number               String?                         @db.VarChar
+  urgency                       String?                         @db.VarChar
+  impact                        String?                         @db.VarChar
+  priority                      String?                         @db.VarChar
+  assignment_group              String?                         @db.VarChar
+  short_description             String?                         @db.VarChar
+  long_description              String?                         @db.VarChar
+  category                      String?                         @db.VarChar
+  subcategory                   String?                         @db.VarChar
+  configuration_item            String?                         @db.VarChar
+  ci_location                   String?                         @db.VarChar
+  opened_at                     DateTime?                       @db.Timestamptz(6)
+  resolved_at                   DateTime?                       @db.Timestamptz(6)
+  created_at                    DateTime?                       @default(now()) @db.Timestamptz(6)
+  incident_class                String?                         @db.VarChar
+  status                        incident_processing_status      @default(inserted)
+  org_id                        String?                         @db.Uuid
+  cluster                       String?                         @db.VarChar
+  close_notes                   String?                         @db.VarChar
+  comments                      String?                         @db.VarChar
+  work_notes                    String?                         @db.VarChar
+  solution                      String?                         @db.VarChar
+  article_used_to_resolve       String?                         @db.VarChar
+  organizations                 organizations?                  @relation(fields: [org_id], references: [id])
+  knowledgebase_document_assist knowledgebase_document_assist[] @relation("incidents_to_knowledgebase_document_assist")
+  recommendations               recommendations[]               @relation("incidents_to_recommendations")
+}
+
+model modules {
+  id                              String                            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                            String                            @db.VarChar
+  org_id                          String?                           @db.Uuid
+  created_by                      String?                           @db.Uuid
+  created_at                      DateTime                          @default(now()) @db.Timestamptz(6)
+  updated_at                      DateTime                          @default(now()) @db.Timestamptz(6)
+  source                          module_source                     @default(knowledgebase)
+  org                             organizations?                    @relation(fields: [org_id], references: [id])
+  modules_knowledgebase_documents modules_knowledgebase_documents[]
+  simulations                     simulations[]
+}
+
+model modules_knowledgebase_documents {
+  module_id   String                        @db.Uuid
+  document_id String                        @db.Uuid
+  document    knowledgebase_document_assist @relation(fields: [document_id], references: [id])
+  module      modules                       @relation(fields: [module_id], references: [id])
+
+  @@id([module_id, document_id])
+}
+
+model quizes {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String         @db.VarChar
+  level        level          @default(medium)
+  created_at   DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime       @default(now()) @db.Timestamptz(6)
+  questions    questions[]
+  users_quizes users_quizes[]
+}
+
+model questions {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quiz_id          String?  @db.Uuid
+  quize_id         String?  @db.Uuid
+  question         String   @db.VarChar
+  options          String[] @db.VarChar
+  answer           String   @db.VarChar
+  correct_attempts Int      @default(0)
+  total_attempts   Int      @default(0)
+  quize            quizes?  @relation(fields: [quize_id], references: [id])
+}
+
+model users_quizes {
+  user_id            String  @db.Uuid
+  quize_id           String  @db.Uuid
+  questions_answered Int     @default(0)
+  correctly_answered Int     @default(0)
+  score              Float   @default(0)
+  completed          Boolean @default(false)
+  quize              quizes  @relation(fields: [quize_id], references: [id])
+  user               users   @relation(fields: [user_id], references: [id])
+
+  @@id([user_id, quize_id])
+}
+
+model simulations {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime            @default(now()) @db.Timestamptz(6)
+  user_id           String              @db.Uuid
+  module_id         String              @db.Uuid
+  simulation_type   simulation_type
+  status            simulation_status   @default(started)
+  processed         Boolean             @default(false)
+  ai_feedback       String?             @db.VarChar
+  score             Float               @default(0)
+  chat_simulations  chat_simulations[]
+  module            modules             @relation(fields: [module_id], references: [id])
+  user              users               @relation(fields: [user_id], references: [id])
+  voice_simulations voice_simulations[]
+}
+
+model chat_simulations {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  simulation_id String      @db.Uuid
+  created_at    DateTime    @default(now()) @db.Timestamptz(6)
+  message       String      @db.VarChar
+  chatter       label
+  simulation    simulations @relation(fields: [simulation_id], references: [id])
+}
+
+model voice_simulations {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  simulation_id String          @db.Uuid
+  created_at    DateTime        @default(now()) @db.Timestamptz(6)
+  content       String          @db.VarChar
+  content_type  transcript_type
+  speaker       label
+  simulation    simulations     @relation(fields: [simulation_id], references: [id])
+}
+
+model cva_dashboard {
+  id                     String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversation_id        String         @db.VarChar
+  interaction_id         String         @unique @db.VarChar
+  session_id             String?        @db.Uuid
+  org_id                 String?        @db.Uuid
+  user_id                String?        @db.Uuid
+  azure_object_id        String?        @db.VarChar
+  user_name              String?        @db.VarChar
+  created_at             DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime       @default(now()) @db.Timestamptz(6)
+  answered_queries       Json?          @db.Json
+  unanswered_queries     Json?          @db.Json
+  non_answerable_queries Json?          @db.Json
+  issue_categories       Json?          @db.Json
+  issue_types            Json?          @db.Json
+  answered_count         Int            @default(0)
+  unanswered_count       Int            @default(0)
+  non_answerable_count   Int            @default(0)
+  total_issues_count     Int            @default(0)
+  total_time_spent       Int?
+  tickets_created        Int            @default(0)
+  ticket_ids             String[]
+  issue_count            Int            @default(0)
+  total_query_count      Int            @default(0)
+  organizations          organizations? @relation(fields: [org_id], references: [id])
+  users                  users?         @relation(fields: [user_id], references: [id])
+
+  @@index([org_id, updated_at])
+  @@index([conversation_id])
+  @@index([user_id])
+  @@index([created_at])
+}
+
+model cva_conversations {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id        String         @db.Uuid
+  messages          Json?          @db.Json
+  language          String?        @db.VarChar
+  file_attachments  Json?          @db.Json
+  channel_id        String?        @db.VarChar
+  from_id           String?        @db.VarChar
+  created_at        DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime       @default(now()) @db.Timestamptz(6)
+  conversation_id   String         @db.VarChar
+  interaction_id    String?        @db.VarChar
+  status            String         @default("ongoing")
+  tasks             Json?          @db.Json
+  org_id            String?        @db.Uuid
+  unpruned_messages Json?          @db.Json
+  organizations     organizations? @relation(fields: [org_id], references: [id])
+
+  @@index([conversation_id, status])
+}
+
+model cva_turn_context {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  azure_object_id        String
+  conversation_reference Json?    @db.Json
+  created_at             DateTime @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime @default(now()) @db.Timestamptz(6)
+  conversation_id        String?  @db.VarChar
+
+  @@index([azure_object_id])
+}
+
+model postcall_topics_for_meeting {
+  id                          String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at                  DateTime                    @default(now()) @db.Timestamptz(6)
+  meeting_id                  String                      @db.Uuid
+  topic                       String                      @db.VarChar
+  queries_regarding_topic     String[]                    @db.VarChar
+  speakers                    String[]                    @db.VarChar
+  keywords                    String[]                    @db.VarChar
+  resources_for_the_topic     String[]                    @db.VarChar
+  content                     String
+  kb_entry                    String
+  is_deleted                  Boolean                     @default(false)
+  approved_at                 DateTime?                   @db.Timestamptz(6)
+  approved_by                 String?                     @db.Uuid
+  is_approved                 Boolean                     @default(false)
+  knowledgebase_collection_id String?                     @db.Uuid
+  kb_entry_versions           postcall_kb_entry_version[]
+  kb_collection               knowledgebase_collection?   @relation(fields: [knowledgebase_collection_id], references: [id])
+  meetings                    meetings                    @relation(fields: [meeting_id], references: [meeting_id], onDelete: Cascade)
+
+  @@index([meeting_id])
+}
+
+model postcall_kb_entry_version {
+  id                String                      @id @default(uuid()) @db.Uuid
+  created_at        DateTime                    @default(now()) @db.Timestamptz(6)
+  kb_entry          String
+  created_by        String?                     @db.Uuid
+  postcall_topic_id String                      @db.Uuid
+  user              users?                      @relation(fields: [created_by], references: [id])
+  postcall_topic    postcall_topics_for_meeting @relation(fields: [postcall_topic_id], references: [id], onDelete: Cascade)
+
+  @@index([postcall_topic_id, created_at(sort: Desc)])
+}
+
+model ticket_upload_history {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String         @db.VarChar
+  size          String         @db.VarChar
+  date          DateTime       @default(now()) @db.Timestamptz(6)
+  url           String         @db.VarChar
+  org_id        String?        @db.Uuid
+  organizations organizations? @relation(fields: [org_id], references: [id])
+}
+
+model train_assist_ingest {
+  id                            String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at                    DateTime                       @default(now()) @db.Timestamptz(6)
+  document_id                   String?                        @db.Uuid
+  status                        String?                        @default("") @db.VarChar
+  knowledgebase_document_assist knowledgebase_document_assist? @relation("train_assist_ingest_document", fields: [document_id], references: [id], onDelete: Restrict)
+
+  @@index([document_id])
+}
+
+model train_assist_topics {
+  id                            String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at                    DateTime                        @default(now()) @db.Timestamptz(6)
+  category                      String?                         @db.VarChar
+  sub_category                  String?                         @db.VarChar
+  title                         String?                         @db.VarChar
+  summary                       String?                         @db.VarChar
+  level                         Int                             @default(0)
+  details                       Json?                           @db.Json
+  documents                     String[]                        @db.Uuid
+  collection_id                 String?                         @db.Uuid
+  org_id                        String?                         @db.Uuid
+  updated_at                    DateTime                        @updatedAt @db.Timestamptz(6)
+  SimulationTheme               SimulationTheme[]
+  train_assist_activity         train_assist_activity[]         @relation("train_assist_topics_activity")
+  train_assist_topic_quiz       train_assist_topic_quiz[]       @relation("train_assist_topics_quiz")
+  collection                    knowledgebase_collection?       @relation(fields: [collection_id], references: [id])
+  organizations                 organizations?                  @relation(fields: [org_id], references: [id])
+  knowledgebase_document_assist knowledgebase_document_assist[] @relation("train_assist_documents_topics")
+
+  @@index([category])
+  @@index([sub_category])
+  @@index([documents], type: Gin)
+}
+
+model train_assist_activity {
+  id                      String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at              DateTime                 @default(now()) @db.Timestamptz(6)
+  user_id                 String?                  @db.Uuid
+  topic_id                String?                  @db.Uuid
+  type                    activity_type?
+  metadata                Json?                    @db.Json
+  module_id               String?
+  quiz_id                 String?                  @db.Uuid
+  quiz_score              Int?                     @db.SmallInt
+  train_assist_topic_quiz train_assist_topic_quiz? @relation("train_assist_topic_quiz_activity", fields: [quiz_id], references: [id], onDelete: Restrict)
+  train_assist_topics     train_assist_topics?     @relation("train_assist_topics_activity", fields: [topic_id], references: [id], onDelete: Restrict)
+  users                   users?                   @relation("user_train_assist_activity", fields: [user_id], references: [id])
+
+  @@index([user_id])
+  @@index([topic_id])
+  @@index([user_id, topic_id, type])
+}
+
+model train_assist_topic_quiz {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  questions             Json?                   @db.Json
+  topic_id              String                  @db.Uuid
+  user_id               String?                 @db.Uuid
+  train_assist_activity train_assist_activity[] @relation("train_assist_topic_quiz_activity")
+  topic                 train_assist_topics     @relation("train_assist_topics_quiz", fields: [topic_id], references: [id])
+  users                 users?                  @relation("user_train_assist_topic_quiz", fields: [user_id], references: [id])
+}
+
+/// /--------------------End of Train Assist Tables --------------------------------
+model ad_appliance_events {
+  id            Int           @id @default(autoincrement())
+  event_type    String
+  username      String
+  email         String
+  event_time    DateTime
+  created_at    DateTime      @default(now())
+  org_id        String        @db.Uuid
+  ldap_server   String?
+  organizations organizations @relation(fields: [org_id], references: [id])
+
+  @@unique([username, event_type, event_time, org_id])
+  @@index([event_time])
+}
+
+model ad_appliance_tasks {
+  id            Int           @id @default(autoincrement())
+  username      String
+  email         String
+  task_type     String
+  status        String        @default("pending")
+  retry_count   Int           @default(0)
+  response      String?
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @updatedAt
+  org_id        String        @db.Uuid
+  ldap_server   String?
+  organizations organizations @relation(fields: [org_id], references: [id])
+
+  @@index([task_type, org_id, ldap_server, status, retry_count, updated_at, created_at])
+}
+
+model chat_virtual_agents {
+  id                String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id            String                 @db.Uuid
+  config            Json?                  @db.Json
+  enabled           Boolean                @default(true)
+  created_at        DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime               @default(now()) @db.Timestamptz(6)
+  config_secret_key String?                @db.VarChar
+  org               organizations          @relation(fields: [org_id], references: [id])
+  user_preferences  cva_user_preferences[]
+}
+
+model cva_user_preferences {
+  id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  azure_object_id String
+  preferences     Json                @db.Json
+  created_at      DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime            @updatedAt @db.Timestamptz(6)
+  cva_id          String              @db.Uuid
+  cva             chat_virtual_agents @relation(fields: [cva_id], references: [id])
+
+  @@unique([azure_object_id, cva_id])
+  @@index([azure_object_id])
+  @@index([cva_id])
+}
+
+model servicenow_records {
+  sys_id     String   @id @db.VarChar
+  table_name String   @db.VarChar
+  data       Json     @db.Json
+  updated_at DateTime
+}
+
+model Interaction {
+  id                   String             @id @default(uuid())
+  conversation_id      String
+  session_id           String
+  user_aad_id          String
+  org_id               String
+  timestamp_query      DateTime
+  timestamp_response   DateTime?
+  user_query_text      String
+  bot_response_content String?
+  response_type        String?
+  card_type            String?
+  intent_topic         String?
+  skill_tag            String?
+  service_action       ServiceAction?
+  citations_provided   Boolean            @default(false)
+  ticket_system_ref    String?
+  interaction_outcome  InteractionOutcome @default(STARTED)
+  error_occurred       Boolean            @default(false)
+  error_message        String?
+  error_type           String?
+  error_component      String?
+  ai_evaluated         Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  aiFeedbacks          AIFeedback?
+  userFeedbacks        UserFeedback[]
+
+  @@index([conversation_id])
+  @@index([session_id])
+  @@index([user_aad_id])
+  @@index([org_id])
+  @@index([intent_topic])
+  @@index([skill_tag])
+  @@index([interaction_outcome])
+  @@index([error_occurred])
+  @@index([ai_evaluated])
+  @@index([timestamp_query])
+}
+
+model UserFeedback {
+  id                 String         @id @default(uuid())
+  interactionId      String
+  user_aad_id        String
+  timestamp_feedback DateTime       @default(now())
+  rating             FeedbackRating
+  comment            String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  interaction        Interaction    @relation(fields: [interactionId], references: [id], onDelete: Cascade)
+
+  @@index([user_aad_id])
+  @@index([interactionId])
+}
+
+model AIFeedback {
+  id                      String      @id @default(uuid())
+  interactionId           String      @unique
+  ai_evaluator_model      String
+  ai_evaluation_timestamp DateTime    @default(now())
+  ai_score_relevance      Float?
+  ai_score_helpfulness    Float?
+  ai_score_groundedness   Float?
+  ai_score_safety         Float?
+  ai_critique_summary     String?
+  ai_flags                String[]
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+  interaction             Interaction @relation(fields: [interactionId], references: [id], onDelete: Cascade)
+}
+
+model SimulationTheme {
+  id                                String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  train_assist_topic_id             String                    @db.Uuid
+  learning_topic_title              String                    @db.VarChar
+  title                             String                    @db.VarChar
+  customer_problem_statement        String
+  keywords                          String[]
+  difficulty                        SimulationDifficultyLevel
+  time_limit_seconds                Int
+  expected_resolution_steps_summary String
+  is_active                         Boolean                   @default(false)
+  org_id                            String                    @db.Uuid
+  created_at                        DateTime                  @default(now()) @db.Timestamptz(6)
+  updated_at                        DateTime                  @updatedAt @db.Timestamptz(6)
+  collection_id                     String?                   @db.Uuid
+  activities                        SimulationActivity[]
+  collection                        knowledgebase_collection? @relation(fields: [collection_id], references: [id], onDelete: Cascade)
+  organization                      organizations             @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  train_assist_topic                train_assist_topics       @relation(fields: [train_assist_topic_id], references: [id], onDelete: Cascade)
+
+  @@index([train_assist_topic_id])
+  @@index([org_id])
+  @@index([collection_id])
+  @@index([is_active])
+}
+
+model SimulationActivity {
+  id                      String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                 String?                  @db.Uuid
+  theme_id                String                   @db.Uuid
+  simulation_session_id   String                   @unique
+  status                  SimulationActivityStatus @default(IN_PROGRESS)
+  score                   Int?
+  time_taken_seconds      Int?
+  conversation_log        Json?
+  evaluation_feedback     String?
+  evaluation_details_json Json?
+  org_id                  String                   @db.Uuid
+  started_at              DateTime                 @default(now()) @db.Timestamptz(6)
+  completed_at            DateTime?                @db.Timestamptz(6)
+  organization            organizations            @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  theme                   SimulationTheme          @relation(fields: [theme_id], references: [id], onDelete: Cascade)
+  user                    users?                   @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+  @@index([theme_id])
+  @@index([org_id])
+  @@index([status])
+}
+
+model meeting_joiner {
+  id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meeting_url    String                @db.VarChar
+  status         meeting_joiner_status @default(not_joined)
+  video_link     String?               @db.VarChar
+  transcript     Json?                 @db.Json
+  participants   Json?                 @db.Json
+  org_id         String?               @db.Uuid
+  meeting_id     String?               @db.Uuid
+  bot_join_time  DateTime?             @db.Timestamptz(6)
+  bot_leave_time DateTime?             @db.Timestamptz(6)
+  created_at     DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime              @default(now()) @db.Timestamptz(6)
+  bot_name       String?               @db.VarChar(100)
+  process_id     Int?
+  meeting        meetings?             @relation(fields: [meeting_id], references: [meeting_id])
+  org            organizations?        @relation(fields: [org_id], references: [id])
+
+  @@index([status])
+  @@index([org_id])
+  @@index([created_at])
+  @@index([process_id])
+}
+
+model tags {
+  id          String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String                          @db.VarChar
+  description String?                         @db.VarChar
+  org_id      String                          @db.Uuid
+  is_deleted  Boolean                         @default(false)
+  created_at  DateTime                        @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime                        @default(now()) @db.Timestamptz(6)
+  collections knowledgebase_collection_tags[]
+  org         organizations                   @relation(fields: [org_id], references: [id])
+
+  @@unique([org_id, name])
+  @@index([is_deleted])
+}
+
+model knowledgebase_collection_tags {
+  collection_id String                   @db.Uuid
+  tag_id        String                   @db.Uuid
+  org_id        String                   @db.Uuid
+  created_at    DateTime                 @default(now()) @db.Timestamptz(6)
+  collection    knowledgebase_collection @relation(fields: [collection_id], references: [id])
+  org           organizations            @relation(fields: [org_id], references: [id])
+  tag           tags                     @relation(fields: [tag_id], references: [id])
+
+  @@id([collection_id, tag_id])
+  @@index([tag_id])
+}
+
+enum AppType {
+  voice_copilot
+  voice_virtual_agent
+}
+
+enum role {
+  Admin
+  User
+  Agent
+  Trainer
+  CvaUser
+}
+
+enum kbSource {
+  azure_blob
+  s3
+  service_now
+  sharepoint
+  public_service_now
+}
+
+enum document_status {
+  inserted
+  processed
+}
+
+enum incident_processing_status {
+  inserted
+  processed
+}
+
+enum recommendation_type {
+  merge
+  refactor
+  create_new_kb
+  outdated
+  missing_translation
+}
+
+enum feedback_type {
+  positive
+  negative
+}
+
+enum module_source {
+  knowledgebase
+}
+
+enum label {
+  ai
+  agent
+}
+
+enum simulation_type {
+  chat
+  voice
+}
+
+enum level {
+  easy
+  hard
+  medium
+}
+
+enum transcript_type {
+  partial
+  final
+}
+
+enum simulation_status {
+  started
+  completed
+  in_progress
+}
+
+enum activity_type {
+  quiz
+  simulation
+  module_completion
+  quiz_started
+  quiz_submitted
+}
+
+enum meeting_joiner_status {
+  not_joined
+  ongoing
+  completed
+}
+
+enum InteractionOutcome {
+  STARTED
+  COMPLETED_OK
+  TICKET_CREATED
+  TICKET_UPDATED
+  ACCOUNT_UNLOCKED
+  FEEDBACK_PROVIDED_POSITIVE
+  FEEDBACK_PROVIDED_NEGATIVE
+  ERROR_BOT
+  ERROR_BACKEND
+  ERROR_SERVICE
+  NO_ANSWER_FOUND
+  ESCALATED
+  CLARIFICATION_NEEDED
+  CANCELLED
+}
+
+enum ServiceAction {
+  PROVISION
+  TROUBLESHOOT
+  MANAGE
+  INFORM
+  REQUEST
+  UNLOCK
+  OTHER
+}
+
+enum FeedbackRating {
+  POSITIVE
+  NEGATIVE
+}
+
+enum SimulationDifficultyLevel {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum SimulationActivityStatus {
+  IN_PROGRESS
+  COMPLETED_PASS
+  COMPLETED_FAIL_TIME
+  COMPLETED_FAIL_STEPS
+  ABORTED
+}

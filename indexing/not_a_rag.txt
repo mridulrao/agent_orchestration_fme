@@ -1,0 +1,28 @@
+Maintain a in-memory dictionary of all the relevant queries user can ask 
+Top-call drivers list 
+
+
+documents{
+	'document_id':
+	'summary': 
+	'content':
+}
+
+
+query_documents{
+	'query_topic': <topic on which the articles are for>
+	'meta_data': {
+			'entities': []
+		}
+	'query_answer' <answer related to that query>
+	'document_id':
+}
+
+Process 
+1) Take the user query 
+2) Embed it and search with the query_document <query_topic>
+3) Retrieve top-3, rerank them
+
+
+Assumptions
+1) Answer <-> 1 document - not spread across - chunk retreival
